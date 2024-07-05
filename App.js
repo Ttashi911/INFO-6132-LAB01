@@ -1,32 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, TextInput, Text, FlatList, TouchableOpacity } from 'react-native';
 import Task from './Components/Task';
 import { styles } from './styles';
+import { firestore } from './config/firebase';
+import { collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from "firebase/firestore";
 
 const App = () => {
   const [tasks, setTasks] = useState([]);
   const [taskTitle, setTaskTitle] = useState('');
 
-  const addTask = () => {
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(firestore, 'tasks'), (snapshot) => {
+      const fetchedTasks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setTasks(fetchedTasks);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const addTask = async () => {
     if (taskTitle.trim().length === 0) return;
 
     const newTask = {
-      id: Date.now().toString(),
       title: taskTitle,
       status: 'due'
     };
-    setTasks([...tasks, newTask]);
-    setTaskTitle('');
+
+    try {
+      await addDoc(collection(firestore, 'tasks'), newTask);
+      setTaskTitle('');
+    } catch (error) {
+      console.error("Error adding task: ", error);
+    }
   };
 
-  const deleteTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+  const deleteTask = async (taskId) => {
+    try {
+      await deleteDoc(doc(firestore, 'tasks', taskId));
+    } catch (error) {
+      console.error("Error deleting task: ", error);
+    }
   };
 
-  const toggleTaskStatus = (taskId) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, status: task.status === 'due' ? 'done' : 'due' } : task
-    ));
+  const toggleTaskStatus = async (taskId, currentStatus) => {
+    const newStatus = currentStatus === 'due' ? 'done' : 'due';
+
+    try {
+      await updateDoc(doc(firestore, 'tasks', taskId), { status: newStatus });
+    } catch (error) {
+      console.error("Error updating task status: ", error);
+    }
   };
 
   return (
@@ -52,8 +78,8 @@ const App = () => {
         renderItem={({ item }) => (
           <Task 
             task={item} 
-            onToggleStatus={toggleTaskStatus} 
-            onDelete={deleteTask} 
+            onToggleStatus={() => toggleTaskStatus(item.id, item.status)} 
+            onDelete={() => deleteTask(item.id)} 
           />
         )}
       />

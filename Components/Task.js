@@ -10,7 +10,7 @@ const Task = ({ task, onToggleStatus, onDelete }) => {
       <Text style={styles.title}>{task.title}</Text>
       <TouchableOpacity
         style={[styles.taskButton, statusButtonStyle]}
-        onPress={() => onToggleStatus(task.id)}
+        onPress={onToggleStatus}
       >
         <Text style={styles.taskButtonText}>
           {task.status === 'done' ? 'Done' : 'Due'}
@@ -18,7 +18,7 @@ const Task = ({ task, onToggleStatus, onDelete }) => {
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.taskButton, styles.deleteButton]}
-        onPress={() => onDelete(task.id)}
+        onPress={onDelete}
       >
         <Text style={styles.taskButtonText}>Delete</Text>
       </TouchableOpacity>
